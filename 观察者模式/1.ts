@@ -10,32 +10,50 @@
 interface Publisher {
   subscribe(obj: Subscriber): void;
   unsubscribe(obj: Subscriber): void;
-  notify(eventType?: string, msg?: string): void;
+  notify(): void;
 }
 class ConcretePublisher implements Publisher {
-  constructor(private name: string, private subscribers: Subscriber[] = []) {}
+  constructor(
+    public name: string,
+    private subscribers: Subscriber[] = [],
+    private state: string = "初始状态"
+  ) {}
   subscribe(obj: Subscriber) {
-    this.subscribers.push(obj);
+    const isExist = this.subscribers.includes(obj);
+    if (!isExist) {
+      this.subscribers.push(obj);
+    }
   }
   unsubscribe(obj: Subscriber) {
     const index = this.subscribers.indexOf(obj);
-    if (index > -1) {
+    if (index !== -1) {
       this.subscribers.splice(index, 1);
     }
   }
-  notify(eventType?: string, msg?: string) {
-    this.subscribers.forEach((item) => item.update(eventType, msg));
+  notify() {
+    this.subscribers.forEach((item) => item.update(this));
+  }
+  otherLogic() {
+    this.state = "新状态";
+    this.notify();
+  }
+  getState() {
+    return this.state;
   }
 }
 // 2. 绝大多数的情况下，订阅者的只有一个update方法，用来接受发布者在事件出发的时候传递过来的信息。
 // 为了区分不同的事件出发，发布者一般会把上下文信息传递过来，例如第一个参数是eventType 第二个是 data
 interface Subscriber {
-  update(eventType?: string, msg?: string): void;
+  update(publisher: Publisher): void;
 }
 class ConcreteSubscriber implements Subscriber {
-  constructor(private name: string) {}
-  update(eventType?: string, msg?: string) {
-    console.log(`${this.name}知道了${eventType}事件的触发, 相关消息为${msg}`);
+  constructor(public name: string) {}
+  update(publisher: ConcretePublisher) {
+    console.log(
+      `观察者:${this.name} 发现了被观察对象 ${
+        publisher.name
+      } 状态发生改变: ${publisher.getState()}`
+    );
   }
 }
 
@@ -44,6 +62,6 @@ const k = new ConcreteSubscriber("kevin");
 const a = new ConcreteSubscriber("ally");
 p.subscribe(k);
 p.subscribe(a);
-p.notify("news", "新闻热点");
+p.notify();
 
 export {};
